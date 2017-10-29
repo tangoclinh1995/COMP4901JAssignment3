@@ -60,9 +60,10 @@ def image_from_url(url):
     """
     try:
         f = urllib.request.urlopen(url)
-        _, fname = tempfile.mkstemp()
+        fid, fname = tempfile.mkstemp()
         with open(fname, 'wb') as ff:
             ff.write(f.read())
+        os.close(fid)
         img = imread(fname)
         os.remove(fname)
         return img
