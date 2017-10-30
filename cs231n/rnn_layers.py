@@ -290,7 +290,24 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # TODO: Implement the forward pass for a single timestep of an LSTM.        #
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
-    pass
+    
+    H = prev_h.shape[1]
+    
+    a = x.dot(Wx) + prev_h.dot(Wh) + b
+    
+    ai = a[:, 0: H]
+    af = a[:, H: (2 * H)]
+    ao = a[:, (2 * H): (3 * H)]
+    ag = a[:, (3 * H): (4 * H)]
+    
+    i = sigmoid(ai)
+    f = sigmoid(af)
+    o = sigmoid(ao)
+    g = np.tanh(ag)
+    
+    next_c = f * prev_c + i * g
+    next_h = o * np.tanh(next_c)
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -322,7 +339,44 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
     # the output value from the nonlinearity.                                   #
     #############################################################################
-    pass
+
+    N, H = dnext_h.shape
+    
+    a = x.dot(Wx) + prev_h.dot(Wh) + b
+    
+    ai = a[:, 0: H]
+    af = a[:, H: (2 * H)]
+    ao = a[:, (2 * H): (3 * H)]
+    ag = a[:, (3 * H): (4 * H)]
+    
+    i = sigmoid(ai)
+    f = sigmoid(af)
+    o = sigmoid(ao)
+    g = np.tanh(ag)
+    
+    next_c = f * prev_c + i * g
+    next_h = o * np.tanh(next_c)
+    
+    do = dnext_h * tanhNextC
+    
+    df = dnext_c * prev_c
+    dprev_c = dnext_c * f
+    di = dnext_c * g
+    dg = dnext_c * i
+    
+    dai = di * i * (1 - i)
+    daf = df * f * (1 - f)
+    dao = do * o * (1 - o)
+    dag = dg * (1 - dg ** 2)
+    
+    da = np.zeros((N, 4 * h, ))
+    da[:, 0: H] = dai
+    da[:, H: (2 * H)] = daf
+    da[:, (2 * H): (3 * H)] = dao
+    da[:, (3 * H): (4 * H)] = dag
+    
+    dx = 
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
