@@ -148,7 +148,7 @@ class CaptioningRNN(object):
         if self.cell_type == "rnn":
             h, cacheH = rnn_forward(captionVecIn, h0, Wx, Wh, b)
         else:
-            h = None
+            h, cacheH = lstm_forward(captionVecIn, h0, Wx, Wh, b)
             
         scores, cacheScores = temporal_affine_forward(h, W_vocab, b_vocab)
         
@@ -159,9 +159,14 @@ class CaptioningRNN(object):
             dLoss, cacheScores
         )
         
-        dCaptionVecIn, dh0, grads["Wx"], grads["Wh"], grads["b"] = rnn_backward(
-            dh, cacheH
-        )
+        if self.cell_type == "rnn":
+            dCaptionVecIn, dh0, grads["Wx"], grads["Wh"], grads["b"] = rnn_backward(
+                dh, cacheH
+            )
+        else:
+            dCaptionVecIn, dh0, grads["Wx"], grads["Wh"], grads["b"] = lstm_backward(
+                dh, cacheH
+            )            
         
         grads["W_embed"] = word_embedding_backward(
             dCaptionVecIn, cacheCaptionVecIn
@@ -235,10 +240,20 @@ class CaptioningRNN(object):
         captions[:, 0] = self._start
         
         prevH = features.dot(W_proj) + b_proj
+        
+        if self.cell_type == "lstm":
+            prevC = np.zeros(prevH.shape)
+        
         prevToken = self._start
         
         for t in range(max_length - 1):
-            curH, _ = rnn_step_forward(W_embed[prevToken], prevH, Wx, Wh, b)
+            if self.cell_type == "rnn":
+                curH, _ = rnn_step_forward(W_embed[prevToken], prevH, Wx, Wh, b)
+            else:
+                curH, curC, _ = lstm_step_forward(
+                    W_embed[prevToken], prevH, prevC, Wx, Wh, b
+                )
+                
             scores = curH.dot(W_vocab) + b_vocab
             
             curToken = scores.argmax(axis = 1)
@@ -246,7 +261,10 @@ class CaptioningRNN(object):
             captions[:, t + 1] = curToken
             
             prevToken = curToken
-            prevH = curH            
+            prevH = curH
+            
+            if self.cell_type == "lstm":
+                prevC = curC
         
         ############################################################################
         #                             END OF YOUR CODE                             #
