@@ -342,20 +342,20 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
 
     N, H = dnext_h.shape
     
-    a = x.dot(Wx) + prev_h.dot(Wh) + b
+    #a = x.dot(Wx) + prev_h.dot(Wh) + b
     
-    ai = a[:, 0: H]
-    af = a[:, H: (2 * H)]
-    ao = a[:, (2 * H): (3 * H)]
-    ag = a[:, (3 * H): (4 * H)]
+    #ai = a[:, 0: H]
+    #af = a[:, H: (2 * H)]
+    #ao = a[:, (2 * H): (3 * H)]
+    #ag = a[:, (3 * H): (4 * H)]
     
-    i = sigmoid(ai)
-    f = sigmoid(af)
-    o = sigmoid(ao)
-    g = np.tanh(ag)
+    #i = sigmoid(ai)
+    #f = sigmoid(af)
+    #o = sigmoid(ao)
+    #g = np.tanh(ag)
     
-    next_c = f * prev_c + i * g
-    next_h = o * np.tanh(next_c)
+    #next_c = f * prev_c + i * g
+    #next_h = o * np.tanh(next_c)
     
     do = dnext_h * tanhNextC
     
