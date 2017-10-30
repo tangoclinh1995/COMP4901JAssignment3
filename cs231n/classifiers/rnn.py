@@ -137,7 +137,39 @@ class CaptioningRNN(object):
         # defined above to store loss and gradients; grads[k] should give the      #
         # gradients for self.params[k].                                            #
         ############################################################################
-        pass
+        
+        # Forward pass
+        h0 = features.dot(W_proj) + b_proj
+        
+        captionVecIn, cacheCaptionVecIn = word_embedding_forward(
+            captions_in, W_embed
+        )
+        
+        if self.cell_type == "rnn":
+            h, cacheH = rnn_forward(captionVecIn, h0, Wx, Wh, b)
+        else:
+            h = None
+            
+        scores, cacheScores = temporal_affine_forward(h, W_vocab, b_vocab)
+        
+        loss, dLoss = temporal_softmax_loss(scores, captions_out, mask)        
+        
+        # Backward pass
+        dh, grads["W_vocab"], grads["b_vocab"] = temporal_affine_backward(
+            dLoss, cacheScores
+        )
+        
+        dCaptionVecIn, dh0, grads["Wx"], grads["Wh"], grads["b"] = rnn_backward(
+            dh, cacheH
+        )
+        
+        grads["W_embed"] = word_embedding_backward(
+            dCaptionVecIn, cacheCaptionVecIn
+        )
+        
+        grads["b_proj"] = dh0.sum(axis = 0).reshape(b_proj.shape)
+        grads["W_proj"] = features.T.dot(dh0)
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -199,7 +231,23 @@ class CaptioningRNN(object):
         # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
         # a loop.                                                                 #
         ###########################################################################
-        pass
+        
+        captions[:, 0] = self._start
+        
+        prevH = features.dot(W_proj) + b_proj
+        prevToken = self._start
+        
+        for t in range(max_length - 1):
+            curH, _ = rnn_step_forward(W_embed[prevToken], prevH, Wx, Wh, b)
+            scores = curH.dot(W_vocab) + b_vocab
+            
+            curToken = scores.argmax(axis = 1)
+            
+            captions[:, t + 1] = curToken
+            
+            prevToken = curToken
+            prevH = curH            
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

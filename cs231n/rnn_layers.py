@@ -161,9 +161,11 @@ def rnn_backward(dh, cache):
     dWh = np.zeros((H, H, ))
     db = np.zeros((H, ))
     
-    dCurH = np.ones((N, H, ))
+    dCurH = np.zeros((N, H, ))
     
-    for t in range(T - 1, -1, - 1):    
+    for t in range(T - 1, -1, - 1):
+        dCurH += dh[:, t, :]                        
+        
         dx[:, t, :], dPrevH, dWxNew, dWhNew, dbNew = rnn_step_backward(
             dCurH, cache[t]
         )
@@ -203,7 +205,10 @@ def word_embedding_forward(x, W):
     #                                                                            #
     # HINT: This can be done in one line using NumPy's array indexing.           #
     ##############################################################################
-    pass
+    
+    out = W[x]
+    cache = (x, W.shape[0])
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -232,7 +237,14 @@ def word_embedding_backward(dout, cache):
     # Note that Words can appear more than once in a sequence.                   #
     # HINT: Look up the function np.add.at                                       #
     ##############################################################################
-    pass
+    
+    x, V = cache
+    
+    D = dout.shape[2]
+    
+    dW = np.zeros((V, D, ))
+    np.add.at(dW, x, dout)
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
